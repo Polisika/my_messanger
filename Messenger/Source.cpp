@@ -13,7 +13,6 @@ using namespace std;
 
 queue<string> MessagesToConcumers;
 vector<SOCKET> Consumers;
-map<SOCKET, string> names;
 mutex globalMutex;
 
 void chat(SOCKET servSock)
@@ -52,7 +51,6 @@ void chat(SOCKET servSock)
 			return;
 		}
 		string toStr(name);
-		names[clientSock] = toStr;
 		globalMutex.unlock();
 
 		while (true)
@@ -65,7 +63,7 @@ void chat(SOCKET servSock)
 				return;
 			}
 
-			string mes(szReq);
+			string mes = toStr + ": " + string(szReq);
 			if (mes[0] == '\\' && mes[1] == 's')
 			{
 				cout << inet_ntoa(from.sin_addr) << " disconnected." << endl;
@@ -98,15 +96,14 @@ void sendToConsumers(SOCKET servSock)
 			for (auto& c : Consumers)
 			{
 				// Отправляем сообщение формата 'имя: Сообщение'
-				string message = names[c] + ": " + buff;
-				int res = send(c, message.c_str(), 1024, 0);
+				int res = send(c, buff.c_str(), 1024, 0);
 				if (res == SOCKET_ERROR)
 				{
 					cout << "Unable to send a message" << endl;
 					globalMutex.unlock();
 					return;
 				}
-				if (message[0] == '\\' && message[1] == 's')
+				if (buff[0] == '\\' && buff[1] == 's')
 				{
 					cout << "Server shutdown." << endl;
 					globalMutex.unlock();
