@@ -69,7 +69,7 @@ void chat(SOCKET servSock)
 				cout << inet_ntoa(from.sin_addr) << " disconnected." << endl;
 				break;
 			}
-			cout << "From " << toStr << ": " << mes << endl;
+			cout << mes << endl;
 
 			globalMutex.lock();
 			MessagesToConcumers.push(mes);
