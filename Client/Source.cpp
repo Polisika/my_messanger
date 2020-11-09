@@ -12,6 +12,7 @@ using namespace std;
 char message[1024];
 string name;
 
+// Отображать пришедшие сообщения от сервера.
 void showMessages(SOCKET clientSock)
 {
     char r[1024] = "\0";
@@ -26,7 +27,7 @@ void showMessages(SOCKET clientSock)
             cout << "Disconnected. Print \\s to quit." << endl;
             return;
         }
-        // ���� ��������� ��������� ����� ��, ��� � ���������, �� �� ���������� ���.
+        // Если это сообщение текущего клиента, то не отображаем его.
         else if (strcmp((name+": "+m).c_str(), r) != 0)
         {
             if (message[0] == '\\' && message[1] == 's')
@@ -35,6 +36,7 @@ void showMessages(SOCKET clientSock)
         }
     }
 }
+// Отправить сообщение на сервер.
 void sendMessages(SOCKET clientSock)
 {
     printf("Enter your name: ");
@@ -45,6 +47,7 @@ void sendMessages(SOCKET clientSock)
     send(clientSock, n, sizeof(n), 0);
     while (true)
     {
+        // Получаем сообщение от клиента и отправляем на сервер.
         gets_s(message, sizeof(message));
         int res = send(clientSock, message, sizeof(message), 0);
         if (res == SOCKET_ERROR)
@@ -61,7 +64,7 @@ void sendMessages(SOCKET clientSock)
 }
 int main()
 {
-#pragma region �onnect
+#pragma region Сonnect
     WORD ver = MAKEWORD(2, 2);
     WSADATA wsaData;
     int retVal = 0;
@@ -105,9 +108,11 @@ int main()
     }
     printf("Connection made sucessfully\n");
 #pragma endregion
-#pragma region Client Logi�
+#pragma region Client Logiс
+    // Запускаем два потока для показа и отправки сообщений.
     thread mess(showMessages, ref(clientSock));
     thread sendmess(sendMessages, ref(clientSock));
+    // Ожидаем завершения работы потоков.
     mess.join();
     sendmess.join();
 #pragma endregion
