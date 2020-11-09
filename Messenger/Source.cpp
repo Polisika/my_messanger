@@ -8,10 +8,12 @@
 #include <queue>
 #include <vector>
 #include <mutex>
+#include <map>
 using namespace std;
 
 queue<string> MessagesToConcumers;
 vector<SOCKET> Consumers;
+map<SOCKET, string> names;
 mutex globalMutex;
 
 void chat(SOCKET servSock)
@@ -40,9 +42,18 @@ void chat(SOCKET servSock)
 
 		globalMutex.lock();
 		Consumers.push_back(clientSock);
-		globalMutex.unlock();
-
 		cout << "Welcome to the club, " << inet_ntoa(from.sin_addr) << ", port " << htons(from.sin_port) << endl;
+		char name[1024];
+		// Пользователь представляется системе
+		res = recv(clientSock, name, 1024, 0);
+		if (res == SOCKET_ERROR)
+		{
+			cout << "Unable to recv on thread " << this_thread::get_id() << endl;
+			return;
+		}
+		string toStr(name);
+		names[clientSock] = toStr;
+		globalMutex.unlock();
 
 		while (true)
 		{
@@ -60,7 +71,7 @@ void chat(SOCKET servSock)
 				cout << inet_ntoa(from.sin_addr) << " disconnected." << endl;
 				break;
 			}
-			cout << "From " << inet_ntoa(from.sin_addr) << ": " << mes << endl;
+			cout << "From " << toStr << ": " << mes << endl;
 
 			globalMutex.lock();
 			MessagesToConcumers.push(mes);
@@ -82,10 +93,12 @@ void sendToConsumers(SOCKET servSock)
 		globalMutex.lock();
 		while (!MessagesToConcumers.empty())
 		{
-			string message = MessagesToConcumers.front();
+			string buff = MessagesToConcumers.front();
 			MessagesToConcumers.pop();
 			for (auto& c : Consumers)
 			{
+				// Отправляем сообщение формата 'имя: Сообщение'
+				string message = names[c] + ": " + buff;
 				int res = send(c, message.c_str(), 1024, 0);
 				if (res == SOCKET_ERROR)
 				{

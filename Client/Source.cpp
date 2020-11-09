@@ -10,6 +10,7 @@
 using namespace std;
 
 char message[1024];
+string name;
 
 void showMessages(SOCKET clientSock)
 {
@@ -19,12 +20,14 @@ void showMessages(SOCKET clientSock)
     while (true)
     {
         ret = recv(clientSock, r, size, 0);
+        string m(message);
         if (ret == SOCKET_ERROR)
         {
             cout << "Disconnected. Print \\s to quit." << endl;
             return;
         }
-        else if (strcmp(message, r) != 0)
+        // Если пришедшее сообщение такое же, как и введенное, то не отображать его.
+        else if (strcmp((name+": "+m).c_str(), r) != 0)
         {
             if (message[0] == '\\' && message[1] == 's')
                 break;
@@ -34,11 +37,24 @@ void showMessages(SOCKET clientSock)
 }
 void sendMessages(SOCKET clientSock)
 {
+    printf("Enter your name: ");
+    char n[1024];
+    gets_s(n, 1024);
+    name = string(n);
+    cout << "Print message to all." << endl;
+    send(clientSock, n, sizeof(n), 0);
     while (true)
     {
         gets_s(message, sizeof(message));
-        send(clientSock, message, sizeof(message), 0);
-
+        int res = send(clientSock, message, sizeof(message), 0);
+        if (res == SOCKET_ERROR)
+        {
+            printf("Unable to send\n");
+            closesocket(clientSock);
+            WSACleanup();
+            system("pause");
+            return;
+        }
         if (message[0] == '\\' && message[1] == 's')
             break;
     }
@@ -90,7 +106,6 @@ int main()
     printf("Connection made sucessfully\n");
 #pragma endregion
 #pragma region Client Logiс
-    cout << "Print message to all." << endl;
     thread mess(showMessages, ref(clientSock));
     thread sendmess(sendMessages, ref(clientSock));
     mess.join();
