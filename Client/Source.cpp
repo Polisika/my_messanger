@@ -31,7 +31,7 @@ void showMessages(SOCKET clientSock)
         {
             if (message[0] == '\\' && message[1] == 's')
                 break;
-            cout << r << endl;
+            cout << endl << r << endl;
         }
     }
 }
